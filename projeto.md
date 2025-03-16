@@ -45,10 +45,14 @@
     │   │   ├── logs.py
     │   │   ├── database.py       # Configuração do banco de dados (ORM)
     │
-    ├── tests/                    # Testes (opcional, se quiser adicionar no futuro)
+    ├── tests/                    # Testes automatizados
     │   ├── __init__.py
-    │   ├── test_usuario.py
-    │   ├── test_analise.py
+    │   ├── conftest.py           # Configurações globais para os testes
+    │   ├── test_usuario.py       # Testes para o módulo de usuários
+    │   ├── test_analise.py       # Testes para o módulo de análises
+    │   ├── test_gestao_risco.py  # Testes para o módulo de gestão de risco
+    │   ├── test_estrategia.py    # Testes para o módulo de estratégias
+
 
 
 ---
@@ -146,6 +150,7 @@
     bcrypt
     sqlalchemy
     python-dotenv
+    pytest
 
 
 ---
@@ -694,8 +699,184 @@
 
 ---
 
+#### 22. tests/conftest.py (Configurações Globais para os Testes)
+    import pytest
+    from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from src.utils.database import Base
+    from src.main import app
+    from src.utils.database import get_db
+
+    # Configuração do banco de dados de teste
+    SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:senha_segura@localhost/test_db"
+    
+    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    
+    # Cria as tabelas no banco de dados de teste
+    Base.metadata.create_all(bind=engine)
+    
+    # Sobrescreve a dependência do banco de dados para usar o banco de teste
+    def override_get_db():
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    @pytest.fixture(scope="module")
+    def client():
+        with TestClient(app) as client:
+            yield client
+    
+    @pytest.fixture(scope="function")
+    def db_session():
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+
+---
+
+#### 23. tests/test_usuario.py (Testes para o Módulo de Usuários)
+    import pytest
+    from src.models.usuario import UsuarioCreate
+    from src.services.usuario_service import UsuarioService
+    from src.repositories.usuario_repository import UsuarioRepository
+    
+    def test_criar_usuario(db_session):
+        # Testa a criação de um usuário
+        usuario = UsuarioCreate(username="testuser", password="testpassword")
+        novo_usuario = UsuarioService.cadastrar_usuario(db_session, usuario.username, usuario.password)
+        assert novo_usuario.username == "testuser"
+        assert novo_usuario.password_hash is not None
+    
+    def test_autenticar_usuario(db_session):
+        # Testa a autenticação de um usuário
+        usuario = UsuarioCreate(username="testuser", password="testpassword")
+        UsuarioService.cadastrar_usuario(db_session, usuario.username, usuario.password)
+        autenticado = UsuarioService.autenticar_usuario(db_session, "testuser", "testpassword")
+        assert autenticado.username == "testuser"
+    
+    def test_autenticar_usuario_senha_incorreta(db_session):
+        # Testa a autenticação com senha incorreta
+        usuario = UsuarioCreate(username="testuser", password="testpassword")
+        UsuarioService.cadastrar_usuario(db_session, usuario.username, usuario.password)
+        with pytest.raises(ValueError):
+            UsuarioService.autenticar_usuario(db_session, "testuser", "senha_errada")
+
+
+---
+
+#### 24. tests/test_analise.py (Testes para o Módulo de Análises)
+    import pytest
+    from src.models.analise import AnaliseRequest
+    from src.services.analise_service import AnaliseService
+    from src.repositories.analise_repository import AnaliseRepository
+    
+    def test_criar_analise(db_session):
+        # Testa a criação de uma análise
+        analise = AnaliseRequest(
+            simbolo="PETR4",
+            timeframe="M1",
+            valor_banca=10000.0,
+            risco_por_operacao=1.0,
+            data_final="2024-01-20"
+        )
+        nova_analise = AnaliseRepository.criar_analise(
+            db_session,
+            analise.simbolo,
+            analise.timeframe,
+            analise.valor_banca,
+            analise.risco_por_operacao,
+            analise.data_final,
+            usuario_id=1
+        )
+        assert nova_analise.simbolo == "PETR4"
+        assert nova_analise.timeframe == "M1"
+        assert nova_analise.valor_banca == 10000.0
+    
+    def test_buscar_analise_por_id(db_session):
+        # Testa a busca de uma análise por ID
+        analise = AnaliseRequest(
+            simbolo="PETR4",
+            timeframe="M1",
+            valor_banca=10000.0,
+            risco_por_operacao=1.0,
+            data_final="2024-01-20"
+        )
+        nova_analise = AnaliseRepository.criar_analise(
+            db_session,
+            analise.simbolo,
+            analise.timeframe,
+            analise.valor_banca,
+            analise.risco_por_operacao,
+            analise.data_final,
+            usuario_id=1
+        )
+        analise_buscada = AnaliseRepository.buscar_analise_por_id(db_session, nova_analise.id)
+        assert analise_buscada.id == nova_analise.id
+
+
+---
+
+#### 25. tests/test_gestao_risco.py (Testes para o Módulo de Gestão de Risco)
+    import pytest
+    from src.models.gestao_risco import GestaoRiscoCreate
+    from src.services.gestao_risco_service import GestaoRiscoService
+    from src.repositories.gestao_risco_repository import GestaoRiscoRepository
+    
+    def test_criar_gestao_risco(db_session):
+        # Testa a criação de uma gestão de risco
+        gestao_risco = GestaoRiscoCreate(nome="Risco Baixo", descricao="Risco de até 1%")
+        nova_gestao_risco = GestaoRiscoService.criar_gestao_risco(db_session, gestao_risco.nome, gestao_risco.descricao)
+        assert nova_gestao_risco.nome == "Risco Baixo"
+        assert nova_gestao_risco.descricao == "Risco de até 1%"
+    
+    def test_buscar_gestao_risco_por_id(db_session):
+        # Testa a busca de uma gestão de risco por ID
+        gestao_risco = GestaoRiscoCreate(nome="Risco Baixo", descricao="Risco de até 1%")
+        nova_gestao_risco = GestaoRiscoService.criar_gestao_risco(db_session, gestao_risco.nome, gestao_risco.descricao)
+        gestao_risco_buscada = GestaoRiscoService.buscar_gestao_risco_por_id(db_session, nova_gestao_risco.id)
+        assert gestao_risco_buscada.id == nova_gestao_risco.id
+
+
+---
+
+#### 26. tests/test_estrategia.py (Testes para o Módulo de Estratégias)
+    import pytest
+    from src.models.estrategia import EstrategiaCreate
+    from src.services.estrategia_service import EstrategiaService
+    from src.repositories.estrategia_repository import EstrategiaRepository
+    
+    def test_criar_estrategia(db_session):
+        # Testa a criação de uma estratégia
+        estrategia = EstrategiaCreate(nome="Tendência de Alta", descricao="Compra em tendência de alta")
+        nova_estrategia = EstrategiaService.criar_estrategia(db_session, estrategia.nome, estrategia.descricao)
+        assert nova_estrategia.nome == "Tendência de Alta"
+        assert nova_estrategia.descricao == "Compra em tendência de alta"
+    
+    def test_buscar_estrategia_por_id(db_session):
+        # Testa a busca de uma estratégia por ID
+        estrategia = EstrategiaCreate(nome="Tendência de Alta", descricao="Compra em tendência de alta")
+        nova_estrategia = EstrategiaService.criar_estrategia(db_session, estrategia.nome, estrategia.descricao)
+        estrategia_buscada = EstrategiaService.buscar_estrategia_por_id(db_session, nova_estrategia.id)
+        assert estrategia_buscada.id == nova_estrategia.id
+
+
+---
+
+
 ### *Como Executar o Projeto*
 
+*Execute os testes*:
+   - No terminal, navegue até a pasta do projeto e execute: pytest tests/
+   
 1. *Crie os arquivos*: Copie e cole o conteúdo de cada arquivo em seu ambiente de desenvolvimento.
 2. *Configure o Docker*:
    - No terminal, navegue até a pasta do projeto.
@@ -703,5 +884,6 @@
 3. *Acesse a API*:
    - A API estará disponível em http://localhost:8000.
    - Acesse o Swagger UI em http://localhost:8000/docs.
+
 
 ---
