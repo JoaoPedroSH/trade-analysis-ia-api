@@ -11,13 +11,13 @@ def get_db():
 
 class UsuarioRepository:
     @staticmethod
-    def criar_usuario(db: Session, username: str, password_hash: str):
-        usuario = Usuario(username=username, password_hash=password_hash)
+    def criar_usuario(db: Session, nome: str, senha_hash: str):
+        usuario = Usuario(nome=nome, senha_hash=senha_hash)
         db.add(usuario)
         db.commit()
         db.refresh(usuario)
         return usuario
 
     @staticmethod
-    def buscar_usuario_por_username(db: Session, username: str):
-        return db.query(Usuario).filter(Usuario.username == username).first()
+    def buscar_usuario_por_nome(db: Session, nome: str):
+        return db.query(Usuario).filter(Usuario.nome == nome).first()

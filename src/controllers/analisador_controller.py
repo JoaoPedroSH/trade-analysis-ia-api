@@ -9,7 +9,7 @@ import MetaTrader5 as mt5
 router = APIRouter()
 
 @router.post("/iniciar/", summary="Iniciar uma nova análise")
-async def iniciar_analisador(analise: AnaliseRequest, usuario: dict = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
+async def iniciar_analisador(analise: AnalisadorRequest, usuario: dict = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
     try:
         # Lógica para iniciar análise
         ...

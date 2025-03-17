@@ -1,7 +1,6 @@
 # trade-analysis-ia-api
 
 ---
-
 ### *Estrutura do Projeto*
 
     trade-analysis-ia-api/
@@ -58,10 +57,6 @@
 
 ---
 
-https://www.mql5.com/en/docs/python_metatrader5
-
-### docker-compose up -d --build - Gerar e subir o container do banco de dados
-### fastapi dev main.py - Subir a aplicação
 
 ### *Como Executar o Projeto*
 
@@ -73,4 +68,8 @@ https://www.mql5.com/en/docs/python_metatrader5
 
 *Preparar ambiente virtual do python e subir o software*
    - Execute ´python -m venv .venv´ e ´.venv\Scripts\Active´ para gerar e ativar o ambiente
-   - Em seguida, execute ´fastapi dev main.py´ para rodar a aplicação
+   - Em seguida, execute ´fastapi dev src/main.py´ para rodar a aplicação
+
+
+### *Links úteis*
+- https://www.mql5.com/en/docs/python_metatrader5

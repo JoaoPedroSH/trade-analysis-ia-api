@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from pydantic import BaseModel
 from src.utils.database import Base
 
 class Analisador(Base):
@@ -13,5 +14,10 @@ class Analisador(Base):
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
 
 
-class AnalisadorRequest:
-    pass
+class AnalisadorRequest(BaseModel):
+    simbolo: str
+    timeframe: str
+    valor_banca: float
+    risco_por_operacao: float
+    data_final: str
+    usuario_id: int
