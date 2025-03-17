@@ -6,11 +6,11 @@
 
     trade-analysis-ia-api/
     │
-    ├── docker-compose.yml        # Configuração do Docker Compose
-    ├── README.md                # Configuração do Docker
-    ├── .env.example                      # Variáveis de ambiente
-    ├── requirements.txt          # Dependências do projeto
-    ├── src/                      # Código-fonte do projeto
+    ├── docker-compose.yml
+    ├── README.md
+    ├── .env.example
+    ├── requirements.txt
+    ├── src/
     │   ├── __init__.py
     |   ├── main.py
     │   ├── models/               # Modelos de dados (ORM)
@@ -45,16 +45,16 @@
     │   │   ├── __init__.py
     │   │   ├── auth.py
     │   │   ├── logs.py
-    │   │   ├── database.py       # Configuração do banco de dados (ORM)
+    │   │   ├── database.py      
     │
     ├── tests/                    # Testes automatizados
     │   ├── __init__.py
     |   ├── unit/  
-    |   │   ├── conftest.py           # Configurações globais para os testes
-    |   │   ├── test_usuario.py       # Testes para o módulo de usuários
-    |   │   ├── test_analise.py       # Testes para o módulo de análises
-    |   │   ├── test_gestao_risco.py  # Testes para o módulo de gestão de risco
-    |   │   ├── test_estrategia.py    # Testes para o módulo de estratégias
+    |   │   ├── conftest.py           
+    |   │   ├── test_usuario.py      
+    |   │   ├── test_analise.py       
+    |   │   ├── test_gestao_risco.py  
+    |   │   ├── test_estrategia.py    
 
 ---
 
