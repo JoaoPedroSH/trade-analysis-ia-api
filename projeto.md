@@ -3,14 +3,15 @@
 
 ### *Estrutura do Projeto*
 
-    projeto/
+    trade-analysis-ia-api/
     │
     ├── docker-compose.yml        # Configuração do Docker Compose
-    ├── Dockerfile                # Configuração do Docker
-    ├── .env                      # Variáveis de ambiente
+    ├── README.md                # Configuração do Docker
+    ├── .env.example                      # Variáveis de ambiente
     ├── requirements.txt          # Dependências do projeto
     ├── src/                      # Código-fonte do projeto
     │   ├── __init__.py
+    |   ├── main.py
     │   ├── models/               # Modelos de dados (ORM)
     │   │   ├── __init__.py
     │   │   ├── usuario.py
@@ -47,12 +48,11 @@
     │
     ├── tests/                    # Testes automatizados
     │   ├── __init__.py
-    │   ├── conftest.py           # Configurações globais para os testes
-    │   ├── test_usuario.py       # Testes para o módulo de usuários
-    │   ├── test_analise.py       # Testes para o módulo de análises
-    │   ├── test_gestao_risco.py  # Testes para o módulo de gestão de risco
-    │   ├── test_estrategia.py    # Testes para o módulo de estratégias
-
-
+    |   ├── unit/  
+    |   │   ├── conftest.py           # Configurações globais para os testes
+    |   │   ├── test_usuario.py       # Testes para o módulo de usuários
+    |   │   ├── test_analise.py       # Testes para o módulo de análises
+    |   │   ├── test_gestao_risco.py  # Testes para o módulo de gestão de risco
+    |   │   ├── test_estrategia.py    # Testes para o módulo de estratégias
 
 ---
