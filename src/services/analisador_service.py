@@ -1,9 +1,16 @@
+import time
+
 import MetaTrader5 as mt5
 import pandas as pd
-import pandas_ta as ta
+from finta import TA
 from datetime import datetime
 from src.repositories.analisador_repository import AnalisadorRepository
 from src.utils.database import get_db
+
+
+def consultar_ia(prompt):
+    pass
+
 
 class AnalisadorService:
     @staticmethod
@@ -32,7 +39,8 @@ class AnalisadorService:
         }
 
     @staticmethod
-    def executar_analisador(simbolo: str, timeframe: str, indicadores: list, valor_banca: float, risco_por_operacao: float, data_final: str, estrategia: str = None, gestao_risco: dict = None):
+    def executar_analisador(simbolo: str, timeframe: str, indicadores: list, valor_banca: float, risco_por_operacao: float, data_final: str, estrategia: str = None, gestao_risco: dict = None,
+                            timeframe_intervalo=None, analisadores=None, id_analisador=None):
         intervalo = timeframe_intervalo[timeframe]  # Define o intervalo com base no timeframe
 
         while True:
@@ -67,10 +75,10 @@ class AnalisadorService:
             for indicador in indicadores:
                 if indicador.startswith("SMA_"):
                     periodo = int(indicador.split("_")[1])
-                    df[f"SMA_{periodo}"] = ta.sma(df['close'], length=periodo)
+                    df[f"SMA_{periodo}"] = TA.SMA(df['close'], length=periodo)
                 elif indicador.startswith("RSI_"):
                     periodo = int(indicador.split("_")[1])
-                    df[f"RSI_{periodo}"] = ta.rsi(df['close'], length=periodo)
+                    df[f"RSI_{periodo}"] = TA.RSI(df['close'], length=periodo)
 
             # Preparar o prompt para a IA
             ultimo_fechamento = df.iloc[-1]['close']
@@ -78,12 +86,12 @@ class AnalisadorService:
 
             # Sugerir estratégia e gestão de risco se não forem fornecidos
             if not estrategia:
-                estrategia = AnaliseService.sugerir_estrategia(df)
+                estrategia = AnalisadorService.sugerir_estrategia(df)
             if not gestao_risco:
-                gestao_risco = AnaliseService.sugerir_gestao_risco(valor_banca, risco_por_operacao)
+                gestao_risco = AnalisadorService.sugerir_gestao_risco(valor_banca, risco_por_operacao)
 
             # Calcular stop loss e stop gain com base na gestão de risco
-            stop_loss, stop_gain, tamanho_posicao = AnaliseService.calcular_gestao_risco(valor_banca, risco_por_operacao, ultimo_fechamento)
+            stop_loss, stop_gain, tamanho_posicao = AnalisadorService.calcular_gestao_risco(valor_banca, risco_por_operacao, ultimo_fechamento)
 
             prompt = f"""
             Analise o ativo {simbolo} com base nos seguintes dados:

@@ -1,4 +1,45 @@
-.env
-.idea
-.venv/
+# Bytecode
+__pycache__/
+*__pycache__/
+*.py[cod]
 
+# Virtual environments
+venv/
+.env/
+*.env
+
+# IDEs e editores
+.vscode/
+.idea/
+*.iml
+
+# Logs e caches
+logs/
+*.log
+
+# Arquivos de dependências
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Configurações do Jupyter Notebook
+.ipynb_checkpoints/
+
+# Dados sensíveis
+*.pem
+*.key
+*.crt
+
+# Testes e cobertura de código
+.tox/
+.nox/
+.coverage
+.coverage.*
+*.cover
+*.py,cover
+htmlcov/
+
+# Distribuição
+build/
+dist/
+*.egg-info/
+.eggs/

@@ -68,7 +68,8 @@
 
 *Preparar ambiente virtual do python e subir o software*
    - Execute ´python -m venv .venv´ e ´.venv\Scripts\Active´ para gerar e ativar o ambiente
-   - Em seguida, execute ´fastapi dev src/main.py´ para rodar a aplicação
+   - ´pip install -r requirements.txt´ para instalar as dependencias
+   - Em seguida, execute ´fastapi dev src/main.py --reload´ para rodar a aplicação
 
 
 ### *Links úteis*
