@@ -40,3 +40,9 @@ async def listar_indicadores(usuario: dict = Depends(obter_usuario_atual)):
         "Stochastic", "ATR", "ADX", "CCI", "Fibonacci"
     ]
     return indicadores
+
+@router.get("/ativos/", summary="Listar ativos disponíveis")
+async def listar_ativos():
+
+    ativos = mt5.symbols_total()
+    return ativos
