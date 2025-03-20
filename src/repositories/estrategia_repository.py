@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from src.models.estrategia import Estrategia
+from src.models.estrategia import Estrategia, EstrategiaTimeframe
 from src.utils.database import SessionLocal
 
 class EstrategiaRepository:
@@ -14,3 +14,7 @@ class EstrategiaRepository:
     @staticmethod
     def buscar_estrategia_por_id(db: Session, id: int):
         return db.query(Estrategia).filter(Estrategia.id == id).first()
+    
+    @staticmethod
+    def consultar_timeframes(db: Session):
+        return db.query(EstrategiaTimeframe).all()

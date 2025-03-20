@@ -66,6 +66,9 @@
 *Inicializar banco de dados*
    - No terminal, navegue até a pasta do projeto e execute ´docker-compose up --build´ para construir e iniciar conteiner msqly.
 
+*Popular tabelas básicas*
+   - ´python -m src.utils.seed´ 
+
 *Preparar ambiente virtual do python e subir o software*
    - Execute ´python -m venv .venv´ e ´.venv\Scripts\Active´ para gerar e ativar o ambiente
    - ´pip install -r requirements.txt´ para instalar as dependencias

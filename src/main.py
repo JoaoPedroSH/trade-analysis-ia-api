@@ -1,14 +1,17 @@
+import os
 from fastapi import FastAPI
 from src.controllers.usuario_controller import router as usuario_router
 from src.controllers.analisador_controller import router as analisador_router
 from src.controllers.gestao_risco_controller import router as gestao_risco_router
 from src.controllers.estrategia_controller import router as estrategia_router
 from src.utils.database import Base, engine
-import MetaTrader5 as mt5
-# Cria as tabelas no banco de dados (se não existirem)
+from src.utils.seed import exec_seed
+
 Base.metadata.create_all(bind=engine)
 
-# Configuração do FastAPI
+if os.getenv("ENVIRONMENT") == "development":
+    exec_seed()
+
 app = FastAPI(
     title="Sistema de Análise de Mercado Financeiro",
     description="API para análise de ativos financeiros com IA.",

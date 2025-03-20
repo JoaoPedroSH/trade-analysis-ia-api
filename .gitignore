@@ -1,12 +1,12 @@
 # Bytecode
+src/controllers/__pycache__/
 __pycache__/
 *__pycache__/
 *.py[cod]
 
 # Virtual environments
 venv/
-.env/
-*.env
+.env
 
 # IDEs e editores
 .vscode/
@@ -43,3 +43,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+*.pyc
+.env
+*.pyc
+/src/utils/__pycache__

@@ -18,3 +18,7 @@ class EstrategiaService:
     @staticmethod
     def excluir_estrategia(db: Session, id: int):
         return EstrategiaRepository.excluir_estrategia(db, id)
+    
+    @staticmethod
+    def consultar_timeframes(db: Session):
+        return EstrategiaRepository.consultar_timeframes(db)
