@@ -17,7 +17,3 @@ class AnalisadorRepository:
         db.commit()
         db.refresh(analisador)
         return analisador
-
-    @staticmethod
-    def buscar_analisador_por_id(db: Session, id: int):
-        return db.query(Analisador).filter(Analisador.id == id).first()

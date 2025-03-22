@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean
-from src.models.base import Situacao
 from src.utils.database import Base
 
 class GestaoRisco(Base):
@@ -12,11 +11,19 @@ class GestaoRisco(Base):
     valor_banca = Column(Float, nullable=False)
     risco_por_operacao = Column(Float, nullable=False)
     tipo_gestao_id = Column(Integer, ForeignKey("gestao_riscos_tipos.id"))
-    situacao = Column(Integer, nullable=False, default=Situacao.ATIVO)
-    stops_predefinidos = Column(Boolean, default=False)
+    situacao_id = Column(Integer, ForeignKey("gestao_riscos_situacoes.id"))
+    stops_predefinidos = Column(Boolean(False))
     stop_ganho = Column(Float, nullable=True)
     stop_perda = Column(Float, nullable=True)
     valor_entrada = Column(Float, nullable=False)
+    exclusao_logica = Column(Boolean(False))
+    
+class GestaoRiscoSituacao(Base):
+    __tablename__ = "gestao_riscos_situacoes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(50), nullable=False)
+    descricao = Column(String(255))
     
 class GestaoRiscoTipo(Base):
     __tablename__ = "gestao_riscos_tipos"
@@ -24,7 +31,6 @@ class GestaoRiscoTipo(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(50), nullable=False)
     descricao = Column(String(255))
-    situacao = Column(Integer, nullable=False, default=Situacao.ATIVO)
 
 class GestaoRiscoCriar(BaseModel):
     nome: str
@@ -33,9 +39,7 @@ class GestaoRiscoCriar(BaseModel):
     tipo_gestao: int
     situacao: int
     
-class GestaoRiscoAtualizar(BaseModel):
+class GestaoRiscoSituacaoConsultar(BaseModel):
+    id: int
     nome: str
     descricao: str
-    risco_por_operacao: float
-    tipo_gestao: int
-    situacao: int

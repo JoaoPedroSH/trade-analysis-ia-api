@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from src.models.gestao_risco import GestaoRisco
-from src.utils.database import SessionLocal
 
 class GestaoRiscoRepository:
     @staticmethod
@@ -12,5 +11,5 @@ class GestaoRiscoRepository:
         return gestao_risco
 
     @staticmethod
-    def buscar_gestao_risco_por_id(db: Session, id: int):
+    def consultar_gestao_risco(db: Session, id: int):
         return db.query(GestaoRisco).filter(GestaoRisco.id == id).first()

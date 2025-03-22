@@ -1,5 +1,5 @@
 import time
-
+from sqlalchemy.orm import Session
 import MetaTrader5 as mt5
 import pandas as pd
 from finta import TA

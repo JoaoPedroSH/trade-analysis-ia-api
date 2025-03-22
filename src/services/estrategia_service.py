@@ -8,17 +8,21 @@ class EstrategiaService:
         return EstrategiaRepository.criar_estrategia(db, nome, descricao)
 
     @staticmethod
-    def buscar_estrategia_por_id(db: Session, id: int):
-        return EstrategiaRepository.buscar_estrategia_por_id(db, id)
+    def consultar_estrategia(db: Session, id: int):
+        return EstrategiaRepository.consultar_estrategia(db, id)
 
     @staticmethod
-    def atualizar_estrategia(db: Session, id: int, nome: str, descricao: str):
-        return EstrategiaRepository.atualizar_estrategia(db, id, nome, descricao)
-
-    @staticmethod
-    def excluir_estrategia(db: Session, id: int):
-        return EstrategiaRepository.excluir_estrategia(db, id)
+    def listar_estrategias(db: Session):
+        return EstrategiaRepository.listar_estrategias(db)
     
     @staticmethod
-    def consultar_timeframes(db: Session):
-        return EstrategiaRepository.consultar_timeframes(db)
+    def listar_timeframes(db: Session):
+        return EstrategiaRepository.listar_timeframes(db)
+    
+    @staticmethod
+    def listar_indicadores(db: Session):
+        return EstrategiaRepository.listar_indicadores(db)
+    
+    @staticmethod
+    def listar_ativos(db: Session):
+        return EstrategiaRepository.listar_timeframes(db)

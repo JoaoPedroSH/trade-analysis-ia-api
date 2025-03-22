@@ -19,5 +19,5 @@ class UsuarioRepository:
         return usuario
 
     @staticmethod
-    def buscar_usuario_por_nome(db: Session, nome: str):
+    def consultar_usuario_por_nome(db: Session, nome: str):
         return db.query(Usuario).filter(Usuario.nome == nome).first()

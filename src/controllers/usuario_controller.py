@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from src.models.usuario import UsuarioCriar, UsuarioRetornoToken
 from src.services.usuario_service import UsuarioService
@@ -10,7 +9,7 @@ from datetime import timedelta
 
 router = APIRouter()
 
-@router.post("/cadastrar/", summary="Cadastrar um novo usuário")
+@router.post("/cadastrar", summary="Cadastrar um novo usuário")
 async def cadastrar_usuario(usuario: UsuarioCriar, db: Session = Depends(get_db)):
     try:
         UsuarioService.cadastrar_usuario(db, usuario.nome, usuario.senha)

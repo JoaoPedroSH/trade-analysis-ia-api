@@ -1,6 +1,6 @@
 # Bytecode
-src/controllers/__pycache__/
-__pycache__/
+src/controllers/__pycache__
+*__pycache__*
 *__pycache__/
 *.py[cod]
 
@@ -47,3 +47,8 @@ dist/
 .env
 *.pyc
 /src/utils/__pycache__
+.cpython-313.*
+*.cpython-313.*
+*.pyc
+/src/models/__pycache__
+/src/controllers/__pycache__
