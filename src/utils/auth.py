@@ -44,7 +44,7 @@ async def obter_usuario_atual(token: str = Depends(oauth2_scheme), db: Session =
     except JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-    usuario = UsuarioRepository.buscar_usuario_por_nome(db, nome)
+    usuario = UsuarioRepository.consultar_usuario_por_nome(db, nome)
     if usuario is None:
         raise HTTPException(status_code=401, detail="Usuário não encontrado")
     return usuario

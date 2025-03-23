@@ -18,7 +18,7 @@ class UsuarioSituacao(Base):
     __tablename__ = "usuarios_situacoes"
     
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String(50), nullable=False)
+    nome = Column(String(50), unique=True, nullable=False)
     descricao = Column(String(255))
 
 class UsuarioCriar(BaseModel):
