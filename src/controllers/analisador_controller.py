@@ -1,57 +1,66 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from src.models.analisador import AnalisadorExecutar
 from src.services.analisador_service import AnalisadorService
 from src.utils.auth import obter_usuario_atual
 from src.utils.database import get_db
-from src.utils.ia import pipe
-import threading
-import time
 
 router = APIRouter()
 
-# Dicionário para armazenar o estado das análises em execução
-analises_em_execucao = {}
+conexoes_ws_ativas = {}
+
 
 @router.post("/iniciar", summary="Iniciar uma nova análise")
-async def iniciar_analisador(analise: AnalisadorExecutar, usuario: dict = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
+async def iniciar_analisador(
+    analise: AnalisadorExecutar,
+    usuario: dict = Depends(obter_usuario_atual),
+    db: Session = Depends(get_db),
+):
     try:
         # Verifica se a análise já está em execução
-        if analise.ativo_financeiro in analises_em_execucao and analises_em_execucao[analise.ativo_financeiro]["executando"]:
+        if analise.ativo_financeiro in conexoes_ws_ativas:
             raise HTTPException(status_code=400, detail="Análise já está em execução para este ativo.")
 
-        # Define o estado inicial da análise
-        analises_em_execucao[analise.ativo_financeiro] = {
-            "executando": True,
-            "thread": threading.Thread(target=AnalisadorService.executar_analise, args=(analise, db))
+        # Serializa os dados da análise
+        analise_data = {
+            "ativo_financeiro": analise.ativo_financeiro,
+            "timeframe": analise.timeframe,
         }
 
-        # Inicia a thread para executar a análise
-        analises_em_execucao[analise.ativo_financeiro]["thread"].start()
+        # Inicia a tarefa Celery
+        tarefa = AnalisadorService.executar_analise.apply_async(args=[analise_data, None])
 
-        return {"mensagem": f"Análise para o ativo {analise.ativo_financeiro} iniciada com sucesso!"}
+        # Armazena a tarefa no dicionário de conexões
+        conexoes_ws_ativas[analise.ativo_financeiro] = tarefa
+
+        return {"mensagem": f"Análise para o ativo {analise.ativo_financeiro} iniciada com sucesso!", "tarefa_id": tarefa.id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/parar", summary="Parar uma análise em execução")
-async def parar_analisador(ativo_financeiro: str, usuario: dict = Depends(obter_usuario_atual)):
+@router.websocket("/ws/{ativo_financeiro}")
+async def websocket_endpoint(websocket: WebSocket, ativo_financeiro: str):
+    await websocket.accept()
+
     try:
-        # Verifica se a análise está em execução
-        if ativo_financeiro not in analises_em_execucao or not analises_em_execucao[ativo_financeiro]["executando"]:
-            raise HTTPException(status_code=400, detail="Nenhuma análise em execução para este ativo.")
+        while True:
+            # Verifica o estado da tarefa
+            if ativo_financeiro in conexoes_ws_ativas:
+                tarefa = conexoes_ws_ativas[ativo_financeiro]
+                estado = tarefa.state
+                meta = tarefa.info
 
-        # Atualiza o estado para parar a análise
-        analises_em_execucao[ativo_financeiro]["executando"] = False
+                # Envia atualizações de progresso
+                if estado == "PROGRESS":
+                    await websocket.send_text(json.dumps({"progresso": meta["progresso"]}))
+                elif estado == "SUCCESS":
+                    await websocket.send_text(json.dumps({"status": "concluido"}))
+                    break
+                elif estado == "FAILURE":
+                    await websocket.send_text(json.dumps({"status": "erro", "erro": str(tarefa.info)}))
+                    break
 
-        return {"mensagem": f"Análise para o ativo {ativo_financeiro} parada com sucesso!"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/executar", summary="Executar uma análise manualmente")
-async def iniciar_analisador(analise: AnalisadorExecutar, usuario: dict = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
-    try:
-        return AnalisadorService.executar_analise(analise, db)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+            await websocket.receive_text()  # Mantém a conexão aberta
+    except WebSocketDisconnect:
+        del conexoes_ws_ativas[ativo_financeiro]

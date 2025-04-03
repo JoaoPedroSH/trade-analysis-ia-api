@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
-import MetaTrader5 as mt5
 import pandas as pd
-from finta import TA
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
+from src.models.analisador import AnalisadorExecutar
 from src.repositories.analisador_repository import AnalisadorRepository
 from src.utils.database import get_db
 import yfinance as yf
 import plotly.graph_objects as go
-
+from src.services.estrategia_service import EstrategiaService
+from src.utils.celery_app import celery_app
 
 class AnalisadorService:
     @staticmethod
@@ -170,42 +170,26 @@ class AnalisadorService:
         return result
     
     @staticmethod
-    def executar_analise(analise: AnalisadorExecutar, db: Session):
+    @celery_app.task(bind=True)
+    def executar_analise(self, analise: AnalisadorExecutar, db: Session):
         """
         Função que executa a análise em loop com base no timeframe.
         """
+        ativo = analise["ativo_financeiro"]
+
         try:
-            # Mapeia o timeframe para o intervalo em segundos
-            timeframe_intervalo = {
-                "1m": 60,  # 1 minuto
-                "5m": 300,  # 5 minutos
-                "15m": 900,  # 15 minutos
-                "30m": 1800,  # 30 minutos
-            }
+            # Simula a execução da análise com atualizações de progresso
+            for progresso in range(0, 101, 10):
+                # Atualiza o progresso no backend do Celery
+                self.update_state(state="PROGRESS", meta={"progresso": progresso})
 
-            intervalo = timeframe_intervalo.get(analise.timeframe, 60)  # Padrão: 1 minuto
+                # Simula o tempo de execução
+                time.sleep(1)
 
-            while analises_em_execucao[analise.ativo_financeiro]["executando"]:
-                # Executa a análise
-                resultado_dados = AnalisadorService.consultar_dados_analise(
-                    analise.ativo_financeiro, 10, analise.timeframe
-                )
-                recomendacao_ia = AnalisadorService.executar_analise_ia(resultado_dados)
-
-                # Salva o resultado no banco de dados ou realiza outras ações necessárias
-                # Exemplo: registrar log no banco
-                # AnalisadorService.registrar_resultado(db, analise, recomendacao_ia)
-
-                print(f"Análise para {analise.ativo_financeiro} executada com sucesso!")
-
-                # Aguarda o intervalo antes de executar novamente
-                time.sleep(intervalo)
-
+            # Retorna o resultado final
+            return {"status": "concluido", "ativo": ativo}
         except Exception as e:
-            print(f"Erro ao executar análise para {analise.ativo_financeiro}: {e}")
-        finally:
-            # Marca a análise como parada
-            analises_em_execucao[analise.ativo_financeiro]["executando"] = False
+            return {"status": "erro", "erro": str(e)}
         
         
     @staticmethod

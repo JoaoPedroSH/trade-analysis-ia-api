@@ -44,7 +44,7 @@ dist/
 *.egg-info/
 .eggs/
 *.pyc
-.env
+*.env
 *.pyc
 /src/utils/__pycache__
 .cpython-313.*
@@ -52,3 +52,5 @@ dist/
 *.pyc
 /src/models/__pycache__
 /src/controllers/__pycache__
+.env
+.env

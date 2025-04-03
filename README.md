@@ -74,6 +74,8 @@
    - ´pip install -r requirements.txt´ para instalar as dependencias
    - Em seguida, execute ´fastapi dev src/main.py --reload´ para rodar a aplicação
 
+Inicie o Celery:
+celery -A src.celery_app worker --loglevel=info
 
 ### *Links úteis*
 - https://www.mql5.com/en/docs/python_metatrader5
