@@ -83,4 +83,3 @@ class EstrategiaTimeframeConsultar(BaseModel):
     id: int
     sigla: str
     descricao: str
-    

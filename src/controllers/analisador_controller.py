@@ -18,23 +18,15 @@ async def iniciar_analisador(
     db: Session = Depends(get_db),
 ):
     try:
+        return AnalisadorService.executar_analise(analise)
         # Verifica se a análise já está em execução
-        if analise.ativo_financeiro in conexoes_ws_ativas:
-            raise HTTPException(status_code=400, detail="Análise já está em execução para este ativo.")
-
-        # Serializa os dados da análise
-        analise_data = {
-            "ativo_financeiro": analise.ativo_financeiro,
-            "timeframe": analise.timeframe,
-        }
-
+        #if analise.ativo_financeiro in conexoes_ws_ativas:
+        #    raise HTTPException(status_code=400, detail="Análise já está em execução para este ativo.")
         # Inicia a tarefa Celery
-        tarefa = AnalisadorService.executar_analise.apply_async(args=[analise_data, None])
-
+        #tarefa = AnalisadorService.executar_analise.apply_async(args=[analise, None])
         # Armazena a tarefa no dicionário de conexões
-        conexoes_ws_ativas[analise.ativo_financeiro] = tarefa
-
-        return {"mensagem": f"Análise para o ativo {analise.ativo_financeiro} iniciada com sucesso!", "tarefa_id": tarefa.id}
+        #conexoes_ws_ativas[analise.ativo_financeiro] = tarefa
+        #return {"mensagem": f"Análise para o ativo {analise.ativo_financeiro} iniciada com sucesso!", "tarefa_id": tarefa.id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

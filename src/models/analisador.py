@@ -26,16 +26,15 @@ class AnalisadorSituacao(Base):
 class AnalisadorExecutar(BaseModel):
     ativo_financeiro: str
     timeframe: str
-    indicador: str
-    padrao: str
-    tipo_gestao: str
-    valor_banca: float
-    risco_por_operacao: float
-    stop_ganho: float
-    stop_perda: float
-    valor_entrada: float
-    token: str
-    usuario_id: int
+    periodo_analise_dados: int
+    saldo: str
+    risco: str
+    stop_loss_automatico: bool = False
+    price_action: str = None
+    indicadores: str = None
+    dados_historicos: str = None
+    dados_indicadores: str = None
+    dados_price_action: str = None
     
 class AnalisadorSituacaoConsultar(BaseModel):
     id: int

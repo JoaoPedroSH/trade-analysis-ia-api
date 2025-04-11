@@ -1,95 +1,82 @@
-from sqlalchemy.orm import Session
 import pandas as pd
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from src.models.analisador import AnalisadorExecutar
-from src.repositories.analisador_repository import AnalisadorRepository
-from src.utils.database import get_db
 import yfinance as yf
 import plotly.graph_objects as go
-from src.services.estrategia_service import EstrategiaService
 from src.utils.celery_app import celery_app
+from src.utils.ia import enviar_prompt_ia
+import MetaTrader5 as mt5
+import plotly.graph_objects as go
+from ta.trend import SMAIndicator, MACD
+from ta.momentum import RSIIndicator
+from datetime import datetime, timedelta
+import json
 
 class AnalisadorService:
     @staticmethod
     def consultar_dados_analise(ticker, days, timeframe='1d'):
         """
-        Função que obtém dados do ativo e gera gráfico de candlestick com indicadores
-        
-        Parâmetros:
-        ticker (str): Símbolo do ativo
-        days (int): Quantidade de dias para análise
-        timeframe (str): Intervalo dos dados ('1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h', '1d', '5d', '1wk', '1mo', '3mo')
+        Obtém dados via MetaTrader 5 e gera gráfico com indicadores.
         """
+        # Inicializa o MetaTrader
+        if not mt5.initialize():
+            raise RuntimeError("Não foi possível iniciar o MetaTrader 5")
+
+        # Mapeamento do timeframe
+        tf_map = {
+            '1m': mt5.TIMEFRAME_M1,
+            '5m': mt5.TIMEFRAME_M5,
+            '15m': mt5.TIMEFRAME_M15,
+            '30m': mt5.TIMEFRAME_M30,
+            '1h': mt5.TIMEFRAME_H1,
+            '1d': mt5.TIMEFRAME_D1,
+        }
+
+        if timeframe not in tf_map:
+            raise ValueError(f"Timeframe '{timeframe}' não suportado para MetaTrader 5")
+
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
-        
-        # Get stock data
-        stock = yf.download(ticker, start=start_date, end=end_date, interval=timeframe)
-        
-        # Calculate indicators
-        stock = AnalisadorService.calcular_indicadores(stock)
-        
-        # Handle MultiIndex columns
+
+        # Pega os dados históricos
+        rates = mt5.copy_rates_range(ticker, tf_map[timeframe], start_date, end_date)
+        if rates is None or len(rates) == 0:
+            raise RuntimeError(f"Nenhum dado retornado para o ativo {ticker}")
+
+        df = pd.DataFrame(rates)
+        df['time'] = pd.to_datetime(df['time'])
+        df.set_index('time', inplace=True)
+        df.rename(columns={'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close', 'tick_volume': 'Volume'}, inplace=True)
+
+        # Indicadores
+        df['SMA20'] = SMAIndicator(df['Close'], window=20).sma_indicator()
+        df['SMA50'] = SMAIndicator(df['Close'], window=50).sma_indicator()
+        df['RSI'] = RSIIndicator(df['Close']).rsi()
+
+        macd = MACD(df['Close'])
+        df['MACD'] = macd.macd()
+        df['Signal_Line'] = macd.macd_signal()
+
+        # Função auxiliar
         def get_column_value(df, col):
-            if isinstance(df[col], pd.DataFrame):
-                return df[col].iloc[:, 0]
             return df[col]
-        
-        # Create figure
+
+        # Gráfico
         fig = go.Figure()
-        
-        # Add candlesticks
         fig.add_trace(go.Candlestick(
-            x=stock.index,
-            open=get_column_value(stock, 'Open'),
-            high=get_column_value(stock, 'High'),
-            low=get_column_value(stock, 'Low'),
-            close=get_column_value(stock, 'Close'),
+            x=df.index,
+            open=df['Open'],
+            high=df['High'],
+            low=df['Low'],
+            close=df['Close'],
             name='OHLC'
         ))
-        
-        # Add indicators
-        fig.add_trace(go.Scatter(
-            x=stock.index,
-            y=get_column_value(stock, 'SMA20'),
-            name='SMA 20',
-            line=dict(color='orange')
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=stock.index,
-            y=get_column_value(stock, 'SMA50'),
-            name='SMA 50',
-            line=dict(color='blue')
-        ))
-        
-        # RSI
-        fig.add_trace(go.Scatter(
-            x=stock.index,
-            y=get_column_value(stock, 'RSI'),
-            name='RSI',
-            yaxis="y2",
-            line=dict(color='purple')
-        ))
-        
-        # MACD
-        fig.add_trace(go.Scatter(
-            x=stock.index,
-            y=get_column_value(stock, 'MACD'),
-            name='MACD',
-            yaxis="y3",
-            line=dict(color='blue')
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=stock.index,
-            y=get_column_value(stock, 'Signal_Line'),
-            name='Signal Line',
-            yaxis="y3",
-            line=dict(color='red')
-        ))
-        
-        # Update layout
+        fig.add_trace(go.Scatter(x=df.index, y=df['SMA20'], name='SMA 20', line=dict(color='orange')))
+        fig.add_trace(go.Scatter(x=df.index, y=df['SMA50'], name='SMA 50', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], name='RSI', yaxis="y2", line=dict(color='purple')))
+        fig.add_trace(go.Scatter(x=df.index, y=df['MACD'], name='MACD', yaxis="y3", line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=df.index, y=df['Signal_Line'], name='Signal Line', yaxis="y3", line=dict(color='red')))
+
         fig.update_layout(
             title=f'Análise Técnica - {ticker} ({timeframe})',
             yaxis_title='Preço',
@@ -100,29 +87,30 @@ class AnalisadorService:
             yaxis3=dict(domain=[0, 0.13], title='MACD'),
             xaxis=dict(rangeslider=dict(visible=False))
         )
-        
-        # Prepare response
+
+        # Prepara resposta
         def get_value(df, col, agg_func=None):
             series = get_column_value(df, col)
             if agg_func:
-                return float(agg_func(series))
-            return float(series.iloc[-1])
-        
+                return float(agg_func(series.dropna()))
+            return float(series.dropna().iloc[-1])
+
         response = {
             'ticker': ticker,
             'period_days': days,
             'timeframe': timeframe,
-            'current_price': get_value(stock, 'Close'),
-            'highest_price': get_value(stock, 'High', max),
-            'lowest_price': get_value(stock, 'Low', min),
-            'volume': get_value(stock, 'Volume', sum),
+            'current_price': get_value(df, 'Close'),
+            'highest_price': get_value(df, 'High', max),
+            'lowest_price': get_value(df, 'Low', min),
+            'volume': get_value(df, 'Volume', sum),
             'start_date': start_date.strftime('%Y-%m-%d'),
             'end_date': end_date.strftime('%Y-%m-%d'),
-            'current_rsi': get_value(stock, 'RSI'),
-            'current_macd': get_value(stock, 'MACD'),
+            'current_rsi': get_value(df, 'RSI'),
+            'current_macd': get_value(df, 'MACD'),
             'fig': fig
         }
-        
+
+        mt5.shutdown()
         return response
     
     @staticmethod
@@ -171,31 +159,54 @@ class AnalisadorService:
     
     @staticmethod
     @celery_app.task(bind=True)
-    def executar_analise(self, analise: AnalisadorExecutar, db: Session):
-        """
-        Função que executa a análise em loop com base no timeframe.
-        """
-        ativo = analise["ativo_financeiro"]
-
+    def executar_analise(self, analise: AnalisadorExecutar):
         try:
-            # Simula a execução da análise com atualizações de progresso
-            for progresso in range(0, 101, 10):
-                # Atualiza o progresso no backend do Celery
-                self.update_state(state="PROGRESS", meta={"progresso": progresso})
-
-                # Simula o tempo de execução
-                time.sleep(1)
-
-            # Retorna o resultado final
-            return {"status": "concluido", "ativo": ativo}
-        except Exception as e:
-            return {"status": "erro", "erro": str(e)}
-        
-        
-    @staticmethod
-    def executar_analise_ia(dados):
-        """
-        Função que executa análise preditiva com IA
-        """
-        pass
+            dados_analise = AnalisadorService.consultar_dados_analise(analise.ativo_financeiro, analise.periodo_analise_dados, analise.timeframe)
+            analise.dados_historicos = dados_analise['fig'].to_json()
+            prompt = AnalisadorService.montar_prompt(analise)
+            resposta_ia = enviar_prompt_ia(prompt)
             
+            return {
+                'ticker': dados_analise['ticker'],
+                'current_price': dados_analise['current_price'],
+                'highest_price': dados_analise['highest_price'],
+                'lowest_price': dados_analise['lowest_price'],
+                'volume': dados_analise['volume'],
+                'indicadores': {
+                    'current_rsi': dados_analise['current_rsi'],
+                    'current_macd': dados_analise['current_macd'],
+                },
+                'fig': dados_analise['fig'].to_json(),
+                'analise': resposta_ia
+            }
+        except Exception as e:
+            raise e
+            
+    @staticmethod
+    def montar_prompt(dados: AnalisadorExecutar):
+        return [
+                {"role": "system", "content": "Você é um agente financeiro, especialista em price action e indicadores, que dá dicas para entusiastas"},
+                {"role": "user", "content": 
+                 f"""
+                    Solicito uma análise técnica detalhada do ativo {dados.ativo_financeiro} com base nos seguintes parâmetros:
+                    Dados Históricos: {dados.dados_historicos}
+                    Formato dos Dados: Data, Abertura, Máxima, Mínima, Fechamento, Volume
+                    Período: Últimos {dados.periodo_analise_dados} dias
+                    Timeframe: {dados.timeframe}
+                    Saldo Disponível: {dados.saldo}
+                    Risco por Operação: {dados.risco}
+                    Price Action: {dados.price_action}
+                    Indicadores Técnicos: {dados.indicadores}
+                    Instruções:
+                    Analise o price action com base nas instruções fornecidas. Se não houver, considere suporte, resistência e tendência.
+                    Aplique os indicadores informados; se não houver, utilize Médias Móveis.
+                    Avalie volume, volatilidade, contexto do timeframe e convergência entre indicadores e price action.
+                    Conclua com uma recomendação: COMPRAR, VENDER ou AGUARDAR.
+                    Em caso de sinal de entrada:
+                    Calcule o tamanho da posição (risco vs saldo).
+                    Defina SL e TP com base em níveis técnicos.
+                    Informe o risco/retorno esperado (ex: 1:2).
+                    Explique a lógica em um parágrafo, destacando os principais sinais da análise.
+                    Limite: resposta objetiva com cerca de 300 tokens.
+                """},
+            ]
